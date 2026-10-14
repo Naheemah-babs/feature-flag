@@ -1,97 +1,192 @@
-CREATE TABLE Applications (
-    Id CHAR(36) NOT NULL DEFAULT (UUID()),
-    Name VARCHAR(100) NOT NULL,
-    ApplicationKey VARCHAR(50) NOT NULL,
-    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    UpdatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
-    ActiveApplicationKey VARCHAR(50) GENERATED ALWAYS AS (IF(IsDeleted = 0, ApplicationKey, NULL)) STORED,
-   
-    CONSTRAINT PK_Applications PRIMARY KEY (Id),
-    CONSTRAINT UX_Applications_ApplicationKey_Active UNIQUE (ActiveApplicationKey)
-);
- 
-CREATE TABLE Features (
-    Id CHAR(36) NOT NULL DEFAULT (UUID()),
-    ApplicationId CHAR(36) NOT NULL,
-    Name VARCHAR(100) NOT NULL,
-    FeatureKey VARCHAR(100) NOT NULL,
-    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    UpdatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
-    ActiveFeatureKey VARCHAR(100) GENERATED ALWAYS AS (IF(IsDeleted = 0, FeatureKey, NULL)) STORED,
- 
-    CONSTRAINT PK_Features PRIMARY KEY (Id),
-    CONSTRAINT FK_Features_Applications
-        FOREIGN KEY (ApplicationId) REFERENCES Applications (Id),
-    CONSTRAINT UQ_Features_Id_ApplicationId UNIQUE (Id, ApplicationId),
-    CONSTRAINT UX_Features_ApplicationId_FeatureKey_Active UNIQUE (ApplicationId, ActiveFeatureKey)
-);
- 
-CREATE TABLE Environments (
-    Id CHAR(36) NOT NULL DEFAULT (UUID()),
-    ApplicationId CHAR(36) NOT NULL,
-    Name VARCHAR(50) NOT NULL,
-    EnvironmentKey VARCHAR(50) NOT NULL,
-    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    UpdatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
-    ActiveEnvironmentKey VARCHAR(50) GENERATED ALWAYS AS (IF(IsDeleted = 0, EnvironmentKey, NULL)) STORED,
- 
-    CONSTRAINT PK_Environments PRIMARY KEY (Id),
-    CONSTRAINT FK_Environments_Applications
-        FOREIGN KEY (ApplicationId) REFERENCES Applications (Id),
-    CONSTRAINT UQ_Environments_Id_ApplicationId UNIQUE (Id, ApplicationId),
-    CONSTRAINT UX_Environments_ApplicationId_EnvironmentKey_Active UNIQUE (ApplicationId, ActiveEnvironmentKey)
-);
- 
-CREATE TABLE Feature_Settings (
-    FeatureId CHAR(36) NOT NULL,
-    EnvironmentId CHAR(36) NOT NULL,
-    ApplicationId CHAR(36) NOT NULL,
-    IsEnabled TINYINT(1) NOT NULL DEFAULT 1,
-    UpdatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
- 
-    CONSTRAINT PK_Feature_Settings
-        PRIMARY KEY (FeatureId, EnvironmentId, ApplicationId),
-    CONSTRAINT FK_Feature_Settings_Features
-        FOREIGN KEY (FeatureId, ApplicationId)
-        REFERENCES Features (Id, ApplicationId),
-    CONSTRAINT FK_Feature_Settings_Environments
-        FOREIGN KEY (EnvironmentId, ApplicationId)
-        REFERENCES Environments (Id, ApplicationId)
-);
- 
-CREATE TABLE Users (
-    Id CHAR(36) NOT NULL DEFAULT (UUID()),
-    Name VARCHAR(100) NOT NULL,
-    Email VARCHAR(254) NOT NULL,
-    DateOfBirth DATE NULL,
-    CreatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    UpdatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
-    ActiveEmail VARCHAR(254) GENERATED ALWAYS AS (IF(IsDeleted = 0, Email, NULL)) STORED,
- 
-    CONSTRAINT PK_Users PRIMARY KEY (Id),
-    CONSTRAINT UX_Users_Email_Active UNIQUE (ActiveEmail)
-);
- 
-CREATE TABLE User_Feature_Settings (
-    UserId CHAR(36) NOT NULL,
-    FeatureId CHAR(36) NOT NULL,
-    EnvironmentId CHAR(36) NOT NULL,
-    IsEnabled TINYINT(1) NOT NULL DEFAULT 1,
-    UpdatedAt DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
- 
-    CONSTRAINT PK_User_Feature_Settings
-        PRIMARY KEY (UserId, FeatureId, EnvironmentId),
-    CONSTRAINT FK_User_Feature_Settings_Users
-        FOREIGN KEY (UserId) REFERENCES Users (Id),
-    CONSTRAINT FK_User_Feature_Settings_Features
-        FOREIGN KEY (FeatureId) REFERENCES Features (Id),
-    CONSTRAINT FK_User_Feature_Settings_Environments
-        FOREIGN KEY (EnvironmentId) REFERENCES Environments (Id)
-);
 
-show tables;
-desc applications;
+CREATE DATABASE IF NOT EXISTS feature_flag_db
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+USE feature_flag_db;
+
+
+CREATE TABLE IF NOT EXISTS applications (
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID())),
+
+    name VARCHAR(100) NOT NULL,
+
+    application_key VARCHAR(100) NOT NULL,
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    updated_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+
+    CONSTRAINT uq_applications_application_key
+        UNIQUE (application_key)
+
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS features (
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID())),
+
+    name VARCHAR(100) NOT NULL,
+
+    feature_key VARCHAR(100) NOT NULL,
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    updated_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+
+    CONSTRAINT uq_features_feature_key
+        UNIQUE (feature_key)
+
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS feature_settings (
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID())),
+
+    application_id BINARY(16) NOT NULL,
+
+    feature_id BINARY(16) NOT NULL,
+
+    is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+
+    is_released BOOLEAN NOT NULL DEFAULT FALSE,
+
+    rollout_percentage TINYINT UNSIGNED NOT NULL DEFAULT 0,
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    updated_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+
+    CONSTRAINT uq_feature_settings_application_feature
+        UNIQUE (application_id, feature_id),
+
+    CONSTRAINT chk_feature_settings_rollout_percentage
+        CHECK (rollout_percentage BETWEEN 0 AND 100),
+
+    CONSTRAINT fk_feature_settings_application
+        FOREIGN KEY (application_id)
+        REFERENCES applications (id)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_feature_settings_feature
+        FOREIGN KEY (feature_id)
+        REFERENCES features (id)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE,
+
+    INDEX idx_feature_settings_feature_id (feature_id),
+
+    INDEX idx_feature_settings_application_enabled (
+        application_id,
+        is_enabled
+    )
+
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS roles (
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID())),
+
+    name VARCHAR(100) NOT NULL,
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    updated_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+
+    CONSTRAINT uq_roles_name
+        UNIQUE (name)
+
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS users (
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID())),
+
+    role_id BINARY(16) NOT NULL,
+
+    name VARCHAR(100) NOT NULL,
+
+    email VARCHAR(254) NOT NULL,
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    updated_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+
+    CONSTRAINT uq_users_email
+        UNIQUE (email),
+
+    CONSTRAINT fk_users_role
+        FOREIGN KEY (role_id)
+        REFERENCES roles (id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+
+    INDEX idx_users_role_id (role_id)
+
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS role_feature_access (
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID())),
+
+    role_id BINARY(16) NOT NULL,
+
+    feature_setting_id BINARY(16) NOT NULL,
+
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+
+    updated_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    PRIMARY KEY (id),
+
+    CONSTRAINT uq_role_feature_access
+        UNIQUE (role_id, feature_setting_id),
+
+    CONSTRAINT fk_role_feature_access_role
+        FOREIGN KEY (role_id)
+        REFERENCES roles (id)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_role_feature_access_feature_setting
+        FOREIGN KEY (feature_setting_id)
+        REFERENCES feature_settings (id)
+        ON UPDATE RESTRICT
+        ON DELETE CASCADE,
+
+    INDEX idx_role_feature_access_feature_setting (
+        feature_setting_id
+    )
+
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+

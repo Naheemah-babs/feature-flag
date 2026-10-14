@@ -1,0 +1,8 @@
+CREATE TABLE Feature (
+    Id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Name           VARCHAR(150)    NOT NULL,
+    FeatureKey VARCHAR(100)    NOT NULL UNIQUE,
+    CreatedAt      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    UpdatedAt      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                                   ON UPDATE CURRENT_TIMESTAMP(3)
+);

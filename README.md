@@ -22,7 +22,7 @@ those settings are evaluated when deciding whether a feature should be
 available.
 
 ## 3. Entity Relationship Diagram (ERD)
-![Entity relationship diagram](docs/ERD v2.png)
+![Entity relationship diagram](docs/ERDv2.png)
 
 ## Requirements and Setup
 

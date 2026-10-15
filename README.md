@@ -10,7 +10,7 @@ The schema uses relational constraints to maintain data integrity and includes t
 
 ## Technologies
 
-- **Database:** MySQL 8.0.16 or later
+- **Database:** MySQL 8.0.16
 - **Storage engine:** InnoDB
 - **SQL features:** Foreign keys, unique constraints, CHECK constraints, auto-incrementing IDs, and automatic timestamps
 - **Intended backend:** C# / .NET
@@ -18,7 +18,7 @@ The schema uses relational constraints to maintain data integrity and includes t
 MySQL 8.0.16 or later is recommended because this schema relies on enforced `CHECK` constraints.
 
 ## Database Structure
-
+![Entity Relationship Diagram](./images/ERDV2.png)
 The database contains six tables:
 
 | Table | Purpose |
